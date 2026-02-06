@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>代码命名小工具</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: "Microsoft Yahei", sans-serif;
+        }
+        body {
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 0 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+        }
+        .input-area {
+            margin-bottom: 20px;
+        }
+        textarea {
+            width: 100%;
+            height: 100px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            resize: none;
+            font-size: 16px;
+        }
+        button {
+            display: block;
+            width: 100%;
+            padding: 12px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 16px;
+            cursor: pointer;
+            margin-bottom: 20px;
+            position: relative;
+        }
+        button:disabled {
+            background-color: #6c757d;
+            cursor: not-allowed;
+        }
+        button .loading {
+            display: none;
+            margin-left: 10px;
+        }
+        button.loading .loading {
+            display: inline-block;
+        }
+        .output-area {
+            margin-top: 20px;
+            margin-bottom: 20px;
+        }
+        .output-box {
+            margin-bottom: 15px;
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+        }
+        .output-label {
+            flex: 0 0 auto;
+            font-weight: bold;
+            color: #555;
+            margin-bottom: 8px;
+            padding-top: 8px;
+        }
+        .output-content {
+            flex: 1 1 auto;
+            position: relative;
+        }
+        .output-content textarea {
+            width: 100%;
+            height: 80px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background-color: #f9f9f9;
+            font-size: 16px;
+            white-space: pre-wrap;
+        }
+        .copy-btn {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            width: 80px;
+            height: 30px;
+            padding: 0;
+            font-size: 14px;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            margin: 0;
+        }
+        .copy-btn:hover {
+            background-color: #218838;
+        }
+        .copy-btn.copied {
+            background-color: #6c757d;
+        }
+        .tip {
+            color: #666;
+            font-size: 14px;
+            margin-top: 10px;
+            text-align: center;
+        }
+        /* 开发者署名样式 */
+        .developer {
+            color: #999;
+            font-size: 12px;
+            text-align: center;
+            margin-top: 20px;
+        }
+        /* 适配移动端 */
+        @media (max-width: 600px) {
+            .output-box {
+                flex-direction: column;
+                gap: 5px;
+            }
+            .output-label {
+                padding-top: 0;
+            }
+            .copy-btn {
+                width: 70px;
+                font-size: 12px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>代码命名小工具</h1>
+        <div class="input-area">
+            <textarea id="inputText" placeholder="请输入要翻译的中文程序术语，例如：帧频、用户登录、数据缓存"></textarea>
+        </div>
+        <button id="translateBtn">
+            开始翻译
+            <span class="loading">●●●</span>
+        </button>
+        
+        <div class="output-area">
+            <!-- 下划线格式 -->
+            <div class="output-box">
+                <div class="output-label">下划线：</div>
+                <div class="output-content">
+                    <textarea id="snakeResult" readonly placeholder="翻译结果会显示在这里..."></textarea>
+                    <button class="copy-btn" data-target="snakeResult">复制</button>
+                </div>
+            </div>
+            <!-- 小驼峰格式 -->
+            <div class="output-box">
+                <div class="output-label">小驼峰：</div>
+                <div class="output-content">
+                    <textarea id="camelResult" readonly placeholder="翻译结果会显示在这里..."></textarea>
+                    <button class="copy-btn" data-target="camelResult">复制</button>
+                </div>
+            </div>
+            <!-- 大驼峰格式 -->
+            <div class="output-box">
+                <div class="output-label">大驼峰：</div>
+                <div class="output-content">
+                    <textarea id="pascalResult" readonly placeholder="翻译结果会显示在这里..."></textarea>
+                    <button class="copy-btn" data-target="pascalResult">复制</button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="tip">
+            提示：翻译结果均为名词形式，点击「复制」可一键复制对应格式内容
+        </div>
+        <!-- 开发者署名 -->
+        <div class="developer">开发者：siom_suda</div>
+    </div>
+
+    <script>
+        // 获取页面元素
+        const inputText = document.getElementById('inputText');
+        const translateBtn = document.getElementById('translateBtn');
+        const snakeResult = document.getElementById('snakeResult');
+        const camelResult = document.getElementById('camelResult');
+        const pascalResult = document.getElementById('pascalResult');
+        const copyBtns = document.querySelectorAll('.copy-btn');
+
+        // 纯名词形式的程序术语库
+        const nounTermMap = {
+            '帧频': 'frame_rate',
+            '帧率': 'frame_rate',
+            '分辨率': 'resolution',
+            '码率': 'bit_rate',
+            '用户登录': 'user_login',
+            '数据缓存': 'data_cache',
+            '接口请求': 'api_request',
+            '数据库': 'database',
+            '密码': 'password',
+            '用户名': 'username',
+            '验证码': 'verification_code',
+            '分页': 'pagination',
+            '排序': 'sorting',
+            '筛选': 'filtering',
+            '日志': 'log',
+            '错误': 'error',
+            '警告': 'warning',
+            '成功': 'success',
+            '失败': 'failure',
+            '参数': 'parameter',
+            '返回值': 'return_value',
+            '函数': 'function',
+            '变量': 'variable',
+            '常量': 'constant',
+            '请求': 'request',
+            '响应': 'response',
+            '提交': 'submission',
+            '查询': 'query',
+            '删除': 'deletion',
+            '新增': 'creation',
+            '修改': 'modification'
+        };
+
+        // 动词转名词的映射表
+        const verbToNounMap = {
+            'login': 'login',
+            'log in': 'login',
+            'submit': 'submission',
+            'delete': 'deletion',
+            'add': 'addition',
+            'modify': 'modification',
+            'update': 'update',
+            'create': 'creation',
+            'filter': 'filtering',
+            'sort': 'sorting',
+            'paginate': 'pagination',
+            'encode': 'encoding',
+            'decode': 'decoding',
+            'compress': 'compression'
+        };
+
+        // 格式转换工具函数
+        // 下划线转小驼峰：frame_rate → frameRate
+        function snakeToCamel(snakeStr) {
+            return snakeStr.replace(/_([a-z])/g, (match, letter) => letter.toUpperCase());
+        }
+
+        // 下划线转大驼峰：frame_rate → FrameRate
+        function snakeToPascal(snakeStr) {
+            const camelStr = snakeToCamel(snakeStr);
+            return camelStr.charAt(0).toUpperCase() + camelStr.slice(1);
+        }
+
+        // 转为纯名词形式（移除_noun后缀）
+        function convertToNounForm(text) {
+            // 第一步：先移除可能出现的_noun后缀
+            const cleanText = text.replace(/_noun/g, '').replace(/noun_/g, '');
+            const words = cleanText.split('_');
+            const nounWords = [];
+            for (const word of words) {
+                // 第二步：替换动词为名词（同时过滤掉noun这个单词）
+                const processedWord = verbToNounMap[word] || word;
+                if (processedWord !== 'noun') { // 排除noun单词
+                    nounWords.push(processedWord);
+                }
+            }
+            return nounWords.join('_');
+        }
+
+        // 带超时的翻译函数（确保结果为名词）
+        async function translateToNounEnglish(text, timeout = 5000) {
+            if (nounTermMap[text]) {
+                return nounTermMap[text];
+            }
+
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), timeout);
+
+            try {
+                const params = new URLSearchParams({
+                    q: text + '（名词）',
+                    langpair: 'zh|en'
+                });
+                const fullUrl = `https://api.mymemory.translated.net/get?${params.toString()}`;
+                
+                const response = await fetch(fullUrl, {
+                    signal: controller.signal,
+                    mode: 'cors'
+                });
+                clearTimeout(timeoutId);
+
+                const data = await response.json();
+                let englishText = data.responseData?.translatedText || text;
+                
+                const snakeText = englishText
+                    .toLowerCase()
+                    .replace(/\s+/g, '_')
+                    .replace(/[^a-z0-9_]/g, '');
+                
+                // 关键：调用处理函数移除_noun后缀
+                return convertToNounForm(snakeText);
+            } catch (error) {
+                console.log(`本地无该术语(${text})，接口请求超时，使用名词化默认处理`);
+                const defaultText = text
+                    .toLowerCase()
+                    .replace(/\s+/g, '_')
+                    .replace(/[^a-z0-9_]/g, '');
+                // 兜底也移除_noun后缀
+                return convertToNounForm(defaultText);
+            }
+        }
+
+        // 一键复制功能
+        function initCopyFunction() {
+            copyBtns.forEach(btn => {
+                btn.addEventListener('click', async () => {
+                    const targetId = btn.getAttribute('data-target');
+                    const targetTextarea = document.getElementById(targetId);
+                    
+                    // 复制内容到剪贴板
+                    try {
+                        await navigator.clipboard.writeText(targetTextarea.value);
+                        // 复制成功提示
+                        btn.textContent = '已复制';
+                        btn.classList.add('copied');
+                        // 2秒后恢复按钮状态
+                        setTimeout(() => {
+                            btn.textContent = '复制';
+                            btn.classList.remove('copied');
+                        }, 2000);
+                    } catch (err) {
+                        alert('复制失败，请手动复制！');
+                        console.error('复制失败:', err);
+                    }
+                });
+            });
+        }
+
+        // 翻译按钮点击事件
+        translateBtn.addEventListener('click', async () => {
+            const inputValue = inputText.value.trim();
+            if (!inputValue) {
+                alert('请输入要翻译的内容！');
+                return;
+            }
+
+            // 禁用按钮+显示加载状态
+            translateBtn.disabled = true;
+            translateBtn.classList.add('loading');
+            snakeResult.value = '翻译中...';
+            camelResult.value = '翻译中...';
+            pascalResult.value = '翻译中...';
+            
+            try {
+                // 处理多行
+                const lines = inputValue.split('\n');
+                const snakeLines = [];
+                const camelLines = [];
+                const pascalLines = [];
+                
+                for (const line of lines) {
+                    if (line.trim()) {
+                        // 获取纯名词的下划线格式结果（已移除_noun）
+                        const snakeNoun = await translateToNounEnglish(line);
+                        snakeLines.push(snakeNoun);
+                        // 转换为小驼峰
+                        const camelNoun = snakeToCamel(snakeNoun);
+                        camelLines.push(camelNoun);
+                        // 转换为大驼峰
+                        const pascalNoun = snakeToPascal(snakeNoun);
+                        pascalLines.push(pascalNoun);
+                    } else {
+                        snakeLines.push('');
+                        camelLines.push('');
+                        pascalLines.push('');
+                    }
+                }
+                
+                // 显示三种格式的纯名词结果
+                snakeResult.value = snakeLines.join('\n');
+                camelResult.value = camelLines.join('\n');
+                pascalResult.value = pascalLines.join('\n');
+            } finally {
+                // 恢复按钮状态
+                translateBtn.disabled = false;
+                translateBtn.classList.remove('loading');
+            }
+        });
+
+        // 支持 Enter 键直接翻译
+        inputText.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !translateBtn.disabled) {
+                e.preventDefault(); // 阻止换行
+                translateBtn.click();
+            }
+        });
+
+        // 初始化复制功能
+        initCopyFunction();
+    </script>
+</body>
+</html>

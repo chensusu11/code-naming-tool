@@ -1,0 +1,27 @@
+{
+  "name": "code-naming-tool",
+  "version": "1.0.0",
+  "description": "代码命名小工具",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder --win --x64"
+  },
+  "build": {
+    "appId": "com.siom_suda.code-naming-tool",
+    "productName": "代码命名小工具",
+    "win": {
+      "target": "nsis"
+    },
+    "nsis": {
+      "oneClick": true,    
+      "allowToChangeInstallationDirectory": false,  
+      "createDesktopShortcut": true,  
+      "createStartMenuShortcut": true
+    }
+  },
+  "devDependencies": {
+    "electron": "^28.0.0",
+    "electron-builder": "^24.9.1"
+  }
+}
